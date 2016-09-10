@@ -6,26 +6,24 @@ ENV KIBANA_HOME=/opt/kibana
 RUN yum -y install java-1.8.0-openjdk
 
 RUN rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
-ADD kibana.repo /etc/yum.repos.d/
+COPY container-files/kibana.repo /etc/yum.repos.d/
 
 RUN yum -y install kibana
 RUN yum -y clean all
-ADD config/kibana.yml ${KIBANA_HOME}/config/
+
+# Config mount
+VOLUME ["${KIBANA_HOME}/config-entry"]
+
+COPY container-files/entrypoint.sh /opt/
+RUN chmod +x /opt/entrypoint.sh
 
 USER kibana
 
+ENV KIBANA_HOME=${KIBANA_HOME}
 ENV PATH=${PATH}:${JAVA_HOME}/bin
 ENV PATH=${PATH}:${KIBANA_HOME}/bin
 
-# Confirm
-RUN echo "##### Confirm" && \
-      echo "----- Java -----" && \ 
-      ${JAVA_HOME}/bin/java -version && \
-      echo "----- Kibana config -----" && \ 
-      cat ${KIBANA_HOME}/config/kibana.yml && \
-    echo "#####"
-
-CMD kibana -c ${KIBANA_HOME}/config/kibana.yml
-
 # Expose ports.
 EXPOSE 5601
+
+ENTRYPOINT ["/opt/entrypoint.sh"]
